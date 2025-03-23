@@ -89,7 +89,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/${{ matrix.target }}/release/unreal-keygen-cli{{ env.EXE }}
+          file: target/${{ matrix.target }}/release/unreal-keygen-cli${{ env.EXE }}
           tag: ${{ github.ref_name }}
           asset_name: unreal-keygen-cli-${{ steps.extract_version.outputs.version }}-${{ matrix.target }}${{ env.EXE }}
           body: ${{ steps.changelog_entry.outputs.content }}
