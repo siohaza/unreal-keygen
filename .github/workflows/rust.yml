@@ -1,0 +1,96 @@
+name: Build/publish release
+
+on: [push, pull_request]
+
+jobs:
+  publish:
+    name: Binary ${{ matrix.target }} (on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            cargo_flags: ""
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            cargo_flags: ""
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            cargo_flags: ""
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            cargo_flags: ""
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-musleabihf
+            cargo_flags: ""
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-gnueabihf
+            cargo_flags: ""
+          - os: ubuntu-latest
+            target: arm-unknown-linux-musleabihf
+            cargo_flags: ""
+          - os: ubuntu-latest
+            target: riscv64gc-unknown-linux-gnu
+            compress: false
+            cargo_flags: "--no-default-features"
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            cargo_flags: ""
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+            cargo_flags: ""
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            cargo_flags: ""
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            cargo_flags: ""
+          - os: ubuntu-latest
+            target: x86_64-unknown-freebsd
+            cargo_flags: ""
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - run: sudo apt install musl-tools
+        if: startsWith(matrix.os, 'ubuntu')
+
+      - name: cargo build
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: build
+          args: --package unreal-keygen-cli --release
+          target: ${{ matrix.target }}
+
+      - name: Set exe extension for Windows
+        run: echo "EXE=.exe" >> $env:GITHUB_ENV
+        if: startsWith(matrix.os, 'windows')
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/unreal-keygen-cli${{ env.EXE }}
+
+      - name: Get version from tag
+        id: extract_version
+        run: |
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/${{ matrix.target }}/release/unreal-keygen-cli{{ env.EXE }}
+          tag: ${{ github.ref_name }}
+          asset_name: unreal-keygen-cli-${{ steps.extract_version.outputs.version }}-${{ matrix.target }}${{ env.EXE }}
+          body: ${{ steps.changelog_entry.outputs.content }}
+        if: startsWith(github.ref_name, 'v') && github.ref_type == 'tag'
