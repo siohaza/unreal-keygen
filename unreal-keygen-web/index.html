@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Unreal Tournament CD Key Generator</title>
+    <link data-trunk rel="css" href="style.css"/>
+</head>
+<body>
+    <div class="container">
+        <div class="generator-card">
+            <div class="product-section">
+                <div class="label">Product</div>
+                <div class="product-select">
+                    <select id="game-select">
+                        <option value="0">Unreal Tournament 2003</option>
+                        <option value="1" selected>Unreal Tournament 2004</option>
+                        <option value="2">Unreal Tournament 3</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="key-display">
+                <div id="key-output">XXXX-XXXX-XXXX-XXXX-XXXX</div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="copy-btn" class="btn copy-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copy
+                </button>
+                <button id="generate-btn" class="btn regenerate-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
+                    </svg>
+                    Regenerate
+                </button>
+            </div>
+
+            <div class="source-link-container">
+                <a href="https://github.com/siohaza/unreal-keygen" target="_blank" class="source-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                    </svg>
+                    Source Code
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            setTimeout(setupUI, 100);
+        });
+
+        function setupUI() {
+            const gameSelect = document.getElementById('game-select');
+            const keyOutput = document.getElementById('key-output');
+            const copyBtn = document.getElementById('copy-btn');
+            const generateBtn = document.getElementById('generate-btn');
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            document.body.appendChild(toast);
+
+            function showToast(message, duration = 2000) {
+                toast.textContent = message;
+                toast.classList.add('show');
+
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, duration);
+            }
+
+            function generateKey() {
+                try {
+                    if (typeof window.wasmBindings === 'undefined' ||
+                        typeof window.wasmBindings.generate_key !== 'function') {
+                        console.error("WASM module not loaded or generate_key not found");
+                        return false;
+                    }
+
+                    const gameType = parseInt(gameSelect.value);
+                    const key = window.wasmBindings.generate_key(gameType);
+                    keyOutput.textContent = key;
+                    return true;
+                } catch (error) {
+                    console.error("Error generating key:", error);
+                    keyOutput.textContent = "ERROR";
+                    return false;
+                }
+            }
+
+            generateBtn.addEventListener('click', function() {
+                console.log("Generate button clicked");
+                if (generateKey()) {
+                    this.classList.add('generating');
+                    setTimeout(() => {
+                        this.classList.remove('generating');
+                    }, 300);
+                }
+            });
+
+            copyBtn.addEventListener('click', function() {
+                console.log("Copy button clicked");
+                const key = keyOutput.textContent;
+
+                if (key && !key.includes("ERROR")) {
+                    navigator.clipboard.writeText(key)
+                        .then(() => {
+                            showToast('Copied to clipboard');
+                        })
+                        .catch(err => {
+                            console.error("Clipboard API error:", err);
+
+                            try {
+                                const tempElement = document.createElement('textarea');
+                                tempElement.value = key;
+                                tempElement.setAttribute('readonly', '');
+                                tempElement.style.position = 'absolute';
+                                tempElement.style.left = '-9999px';
+                                document.body.appendChild(tempElement);
+
+                                tempElement.select();
+                                document.execCommand('copy');
+                                document.body.removeChild(tempElement);
+
+                                showToast('Copied to clipboard');
+                            } catch (e) {
+                                console.error("Fallback copy method failed:", e);
+                                showToast('Failed to copy');
+                            }
+                        });
+                }
+            });
+
+            gameSelect.addEventListener('change', function() {
+                console.log("Game selection changed to:", this.value);
+                generateKey();
+            });
+
+            if (!generateKey()) {
+                console.log("WASM not ready, setting up retry...");
+                const intervalId = setInterval(() => {
+                    if (generateKey()) {
+                        console.log("Key generated successfully");
+                        clearInterval(intervalId);
+                    }
+                }, 100);
+
+                setTimeout(() => clearInterval(intervalId), 5000);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+[workspace]
+members = [
+    "unreal-keygen-core",
+    "unreal-keygen-cli",
+    "unreal-keygen-web",
+]
+resolver = "3"
+license = "GPL-3.0-or-later"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[workspace.dependencies]
+rand = "0.9.0"
+md-5 = "0.10.6"

@@ -1,0 +1,10 @@
+[package]
+name = "unreal-keygen-cli"
+version = "0.1.0"
+edition = "2024"
+description = "Command-line tool for generating Unreal Tournament CD keys"
+authors = ["siohaza <siohaza@proton.me>"]
+
+[dependencies]
+unreal-keygen-core = { path = "../unreal-keygen-core" }
+clap = { version = "4.5.32", features = ["derive"] }
